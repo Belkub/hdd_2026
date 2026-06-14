@@ -1,0 +1,6 @@
+{
+  "name": "ГНБ Калькуляторы Бурения",
+  "description": "Двухстраничное приложение для ГНБ: Тестер Бентонитового Раствора ГНБ и Калькулятор Расхода Материалов.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
