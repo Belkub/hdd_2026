@@ -984,13 +984,85 @@ export const ProjectCalculator: React.FC = () => {
         xcFactor = 0.7;
       }
 
+      let sodaConc = rawSoda;
+      let bentConc = rawBent * bentFactor;
+      let paaConc = rawPaa;
+      let pacConc = rawPac * pacFactor;
+      let xcConc = rawXc * xcFactor;
+      let lubConc = rawLub;
+      let detConc = 0;
+
+      if (ww === 3) {
+        // Precise recipe concentrations (кг/м3) for 'средневязкий Альбрехта-MV' (ww === 3)
+        let b = 18;
+        let x = 0.4;
+        let p = 0;
+        let pa = 0;
+        let l = 0.5;
+        let d = 0;
+
+        const num = spec.num;
+        if (num === 1) {
+          b = 18; x = 0.4; l = 0.5;
+        } else if (num === 2) {
+          b = 18; x = 0.4; l = 0.5; d = 0.5;
+        } else if (num === 3) {
+          b = 20; x = 0.5; l = 0.5; d = 0.5;
+        } else if (num === 4) {
+          b = 18; x = 0.5; p = 0.2; l = 0.5; d = 0.5;
+        } else if (num === 5) {
+          b = 20; x = 0.8; p = 0.2; l = 1.0;
+        } else if (num === 6) {
+          b = 20; x = 0.8; p = 0.2; l = 1.0;
+        } else if (num === 7) {
+          b = 20; x = 0.6; pa = 0.6; l = 1.0;
+        } else if (num === 8) {
+          b = 22; x = 0.6; l = 0.8;
+        } else if (num === 9) {
+          b = 18; x = 0.6; p = 0.2; l = 0.8;
+        } else if (num === 10) {
+          b = 22; x = 0.8; l = 0.8;
+        } else if (num === 11) {
+          b = 25; x = 0.8; l = 1.0;
+        } else if (num === 12) {
+          b = 22; x = 0.8; l = 1.0;
+        } else if (num === 13) {
+          b = 22; x = 0.6; l = 0.8;
+        } else if (num === 15) {
+          b = 22; x = 0.6; l = 0.8;
+        } else if (num === 16) {
+          b = 24; x = 0.6; pa = 0.6; l = 1.0;
+        } else if (num === 17) {
+          b = 20; x = 0.6; l = 0.8;
+        } else if (num === 18 || num === 20) {
+          b = 24; x = 0.6; pa = 0.6; l = 1.0;
+        } else {
+          // Remaining hard/strong categories (14, 19, 21, 22)
+          b = 24; x = 0.6; pa = 0.6; l = 1.0;
+        }
+
+        // Apply scaling factor for consumption category (intensity selection):
+        // mm: 1 = min (0.8x), 2 = c/standard (1.0x), 3 = max (1.2x)
+        let factor = 1.0;
+        if (mm === 1) factor = 0.8;
+        if (mm === 3) factor = 1.2;
+
+        bentConc = b * factor;
+        xcConc = x * factor;
+        paaConc = p * factor;
+        pacConc = pa * factor;
+        lubConc = l * factor;
+        detConc = d * factor;
+      }
+
       materials = {
-        soda: totalVolume * rawSoda,
-        bentonite: totalVolume * rawBent * bentFactor,
-        paa: totalVolume * rawPaa,
-        pac: totalVolume * rawPac * pacFactor,
-        xc: totalVolume * rawXc * xcFactor,
-        lub: totalVolume * rawLub
+        soda: totalVolume * sodaConc,
+        bentonite: totalVolume * bentConc,
+        paa: totalVolume * paaConc,
+        pac: totalVolume * pacConc,
+        xc: totalVolume * xcConc,
+        lub: totalVolume * lubConc,
+        det: totalVolume * detConc
       };
     }
 
@@ -1465,16 +1537,18 @@ export const ProjectCalculator: React.FC = () => {
                   </h3>
 
                   <div className="grid grid-cols-2 gap-3.5">
-                    {Object.entries(results.materials).map(([key, val]: [string, any]) => (
-                      <div key={key} className="bg-cyan-50/50 p-3.5 rounded-2xl border border-cyan-100/50 hover:bg-cyan-50 transition-colors">
-                        <div className="text-[10px] text-cyan-800 uppercase font-bold mb-1 tracking-wider">
-                          {MATERIAL_LABELS[key] || key}
+                    {Object.entries(results.materials)
+                      .filter(([_, val]: [string, any]) => val > 0.01)
+                      .map(([key, val]: [string, any]) => (
+                        <div key={key} className="bg-cyan-50/50 p-3.5 rounded-2xl border border-cyan-100/50 hover:bg-cyan-50 transition-colors">
+                          <div className="text-[10px] text-cyan-800 uppercase font-bold mb-1 tracking-wider">
+                            {MATERIAL_LABELS[key] || key}
+                          </div>
+                          <div className="text-xl font-extrabold text-cyan-950">
+                            {val.toLocaleString(undefined, { maximumFractionDigits: 1 })} кг
+                          </div>
                         </div>
-                        <div className="text-xl font-extrabold text-cyan-950">
-                          {val.toLocaleString(undefined, { maximumFractionDigits: 1 })} кг
-                        </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
               )}
@@ -1488,14 +1562,16 @@ export const ProjectCalculator: React.FC = () => {
                   </h3>
 
                   <div className="space-y-2">
-                    {Object.entries(results.materials).map(([key, val]: [string, any]) => (
-                      <div key={key} className="flex justify-between items-center text-xs p-2.5 bg-emerald-50 text-emerald-800 rounded-xl">
-                        <span className="font-bold capitalize">{MATERIAL_LABELS[key] || key}</span>
-                        <span className="font-mono font-extrabold text-sm">
-                          {(val / results.totalVolume).toFixed(2)} кг/м³
-                        </span>
-                      </div>
-                    ))}
+                    {Object.entries(results.materials)
+                      .filter(([_, val]: [string, any]) => val > 0.01)
+                      .map(([key, val]: [string, any]) => (
+                        <div key={key} className="flex justify-between items-center text-xs p-2.5 bg-emerald-50 text-emerald-800 rounded-xl">
+                          <span className="font-bold capitalize">{MATERIAL_LABELS[key] || key}</span>
+                          <span className="font-mono font-extrabold text-sm">
+                            {(val / results.totalVolume).toFixed(2)} кг/м³
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </div>
               )}
